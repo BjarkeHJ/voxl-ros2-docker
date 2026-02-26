@@ -1,0 +1,58 @@
+# =============================================================================
+# docker-compose.workstation.yml
+# Run on your x86_64 dev machine for native development + cross-compilation
+# =============================================================================
+services:
+
+  # ---------- Native x86 dev container (full dev tools) ----------
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: voxl-dev
+    image: voxl-drone:dev-amd64
+    container_name: voxl-dev
+    hostname: voxl-dev
+    privileged: true
+    network_mode: host
+    volumes:
+      - ../src:/ros2_ws/src
+      - dev-build:/ros2_ws/build
+      - dev-install:/ros2_ws/install
+      - dev-log:/ros2_ws/log
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # ---------- ARM64 cross-build via QEMU (full dev tools) ----------
+  cross-arm64:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: voxl-dev
+    image: voxl-drone:dev-arm64
+    container_name: voxl-cross-arm64
+    platform: linux/arm64
+    volumes:
+      - ../src:/ros2_ws/src
+      - cross-build:/ros2_ws/build
+      - cross-install:/ros2_ws/install
+      - cross-log:/ros2_ws/log
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+volumes:
+  dev-build:
+  dev-install:
+  dev-log:
+  cross-build:
+  cross-install:
+  cross-log:

@@ -1,0 +1,10 @@
+.git
+build/
+install/
+log/
+deploy/
+*.pyc
+__pycache__
+.vscode
+.devcontainer
+*.tar.gz

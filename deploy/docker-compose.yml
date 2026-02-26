@@ -1,0 +1,27 @@
+# =============================================================================
+# docker-compose.drone.yml
+# Run on the drone (aarch64 / Ubuntu 18 host)
+# Uses the SLIM runtime image — no compilers, no dev tools
+# Pre-built install/ artifacts are mounted in via volume
+# =============================================================================
+services:
+
+  voxl:
+    image: voxl-drone:runtime-arm64               # Pre-built slim image
+    container_name: voxl-runtime
+    hostname: voxl-runtime
+    privileged: true
+    network_mode: host
+    volumes:
+      - ./src:/ros2_ws/src                    # Source (for Python nodes / launch files)
+      - ./install:/ros2_ws/install            # Pre-built ARM64 binaries from workstation
+      - /dev:/dev                                 # Serial ports, cameras, IMU, GPIO
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    # Uncomment to auto-launch your flight stack:
+    # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch my_drone_pkg drone.launch.py"
+    command: /bin/bash

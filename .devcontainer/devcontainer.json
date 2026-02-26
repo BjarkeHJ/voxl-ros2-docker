@@ -1,0 +1,26 @@
+{
+    "name": "Drone ROS2 Humble Dev",
+    "dockerComposeFile": ["../docker/docker-compose.workstation.yml"],
+    "service": "dev",
+    "workspaceFolder": "/home/dev/ws",
+    "remoteUser": "dev",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-python.python",
+                "ms-iot.vscode-ros",
+                "twxs.cmake",
+                "streetsidesoftware.code-spell-checker"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "cmake.configureOnOpen": false,
+                "C_Cpp.default.intelliSenseMode": "linux-gcc-x64"
+            }
+        }
+    },
+    "forwardPorts": [],
+    "postCreateCommand": "sudo rosdep update --rosdistro humble"
+}
