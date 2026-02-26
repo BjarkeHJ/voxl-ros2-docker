@@ -29,6 +29,9 @@ help() {
     cat <<EOF
 Help: $(basename "$0") <command>
 
+---- HELP ----
+  help                 Display all commands
+
 ---- ONE-TIME SETUP ----
   setup-qemu           Install QEMU user-static for arm64 emulation (run once)
 
@@ -176,7 +179,7 @@ cmd_deploy() {
 
     # Copy source
     rsync -a --delete --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
-        "${PROJECT_DIR}/src/" "${deploy_dir}/src/"
+        "${PROJECT_DIR}/ros2_ws/src/" "${deploy_dir}/src/"
 
     # Check install/ exists
     if [ ! -d "${deploy_dir}/install" ] || [ -z "$(ls -A "${deploy_dir}/install" 2>/dev/null)" ]; then
@@ -185,6 +188,7 @@ cmd_deploy() {
     fi
 
     echo "==> Syncing to ${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}..."
+    ssh "${VOXL_USER}@${VOXL_HOST}" "mkdir -p ${VOXL_DIR}"    # Ensure VOXL_DIR exists on drone
     rsync -avz --progress --delete \
         "${deploy_dir}/" \
         "${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}/"
