@@ -85,7 +85,7 @@ voxl-ros2-docker/                           This repo lives on your workstation
 ### Onboard Docker Directory
 Note: In this case user is root
 ```
-/home/root/voxl_docker/
+/voxl_docker/
 ├── docker-compose.yml              Compose file for the runtime container
 ├── src/                            Your ROS2 packages (for launch files, Python nodes)
 └── install

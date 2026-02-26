@@ -134,7 +134,7 @@ cmd_build_ws() {
 cmd_build_ws_cross() {
     echo "==> Running colcon build in arm64 container (QEMU-emulated)..."
     docker compose -f "${DOCKER_DIR}/docker-compose.workstation.yml" run --rm cross-arm64 \
-        bash -c "source /opt/ros/humble/setup.bash && cd /ros2_ws && colcon build --symlink-install"
+        bash -c "source /opt/ros/humble/setup.bash && colcon build"
     echo ""
     echo "==> ARM64 binaries built. Run 'extract-install' to copy them out."
 }
@@ -152,6 +152,7 @@ cmd_export_runtime() {
 
 cmd_extract_install() {
     local dest="${PROJECT_DIR}/deploy/install"
+    rm -rf "${dest}"
     mkdir -p "${dest}"
 
     echo "==> Extracting arm64 install/ from cross-build volume..."
@@ -188,7 +189,7 @@ cmd_deploy() {
     fi
 
     echo "==> Syncing to ${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}..."
-    ssh "${VOXL_USER}@${VOXL_HOST}" "mkdir -p ${VOXL_DIR}"    # Ensure VOXL_DIR exists on drone
+    ssh "${VOXL_USER}@${VOXL_HOST}" "mkdir -p ${VOXL_DIR}" # Ensure VOXL_DIR exists on drone
     rsync -avz --progress --delete \
         "${deploy_dir}/" \
         "${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}/"
@@ -197,7 +198,7 @@ cmd_deploy() {
     echo "==> Deploy complete. Drone directory layout:"
     echo "    ${VOXL_DIR}/"
     echo "    ├── docker-compose.yml"
-    echo "    ├── src/               (your ROS2 packages)"
+    echo "    ├── src/               (ROS2 packages)"
     echo "    └── install/           (pre-built arm64 binaries)"
 }
 
@@ -262,6 +263,6 @@ case "${1:-}" in
     voxl-shell)       cmd_voxl_shell ;;
     voxl-logs)        cmd_voxl_logs ;;
     voxl-stop)        cmd_voxl_stop ;;
-    help)                help ;;
+    help)             help ;;
     *)                help ;;
 esac

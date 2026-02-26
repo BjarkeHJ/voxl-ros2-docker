@@ -12,11 +12,8 @@ FROM ubuntu:22.04 AS voxl-dev
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends locales \
-    && locale-gen en_US.UTF-8 \
-    && rm -rf /var/lib/apt/lists/*
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # ---- Core system + build packages ----
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -37,7 +34,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     # Dev comfort
     vim \
-    tmux \
     # Python
     python3 \
     python3-pip \
@@ -75,8 +71,8 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/${USERNAME}
 
 USER ${USERNAME}
-# WORKDIR /home/${USERNAME}/ws
 WORKDIR /ros2_ws
+RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log
 
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USERNAME}/.bashrc \
     && echo 'if [ -f /ros2_ws/install/setup.bash ]; then source /ros2_ws/install/setup.bash; fi' \
@@ -92,11 +88,8 @@ FROM ubuntu:22.04 AS voxl-runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends locales \
-    && locale-gen en_US.UTF-8 \
-    && rm -rf /var/lib/apt/lists/*
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # ---- Minimal runtime dependencies only ----
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -133,8 +126,8 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/${USERNAME}
 
 USER ${USERNAME}
-# WORKDIR /home/${USERNAME}/ws
 WORKDIR /ros2_ws
+RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log
 
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USERNAME}/.bashrc \
     && echo 'if [ -f /ros2_ws/install/setup.bash ]; then source /ros2_ws/install/setup.bash; fi' \

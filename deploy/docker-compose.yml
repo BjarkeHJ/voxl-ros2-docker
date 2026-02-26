@@ -7,15 +7,15 @@
 services:
 
   voxl:
-    image: voxl-drone:runtime-arm64               # Pre-built slim image
+    image: voxl-drone:runtime-arm64                   # Pre-built slim image
     container_name: voxl-runtime
     hostname: voxl-runtime
     privileged: true
     network_mode: host
     volumes:
-      - ./src:/ros2_ws/src                    # Source (for Python nodes / launch files)
-      - ./install:/ros2_ws/install            # Pre-built ARM64 binaries from workstation
-      - /dev:/dev                                 # Serial ports, cameras, IMU, GPIO
+      - ./src:/ros2_ws/src                            # Source (for Python nodes / launch files)
+      - ./install:/ros2_ws/install                    # Pre-built ARM64 binaries from workstation
+      - /dev:/dev                                     # Serial ports, cameras, IMU, GPIO
     environment:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

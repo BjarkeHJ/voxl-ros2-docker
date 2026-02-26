@@ -16,15 +16,17 @@ services:
     privileged: true
     network_mode: host
     volumes:
-      - ../src:/ros2_ws/src
+      - ../ros2_ws/src:/ros2_ws/src
       - dev-build:/ros2_ws/build
       - dev-install:/ros2_ws/install
       - dev-log:/ros2_ws/log
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # - ./cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro
     environment:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      # - CYCLONEDDS_URI=file:///ros2_ws/cyclonedds.xml
     stdin_open: true
     tty: true
     command: /bin/bash
@@ -39,7 +41,7 @@ services:
     container_name: voxl-cross-arm64
     platform: linux/arm64
     volumes:
-      - ../src:/ros2_ws/src
+      - ../ros2_ws/src:/ros2_ws/src
       - cross-build:/ros2_ws/build
       - cross-install:/ros2_ws/install
       - cross-log:/ros2_ws/log
@@ -50,9 +52,21 @@ services:
     command: /bin/bash
 
 volumes:
-  dev-build:
-  dev-install:
-  dev-log:
-  cross-build:
   cross-install:
+    name: cross-install
+  cross-build:
+    name: cross-build
   cross-log:
+    name: cross-log
+  dev-build:
+    name: dev-build
+  dev-install:
+    name: dev-install
+  dev-log:
+    name: dev-log
+  # dev-build:
+  # dev-install:
+  # dev-log:
+  # cross-build:
+  # cross-install:
+  # cross-log:
