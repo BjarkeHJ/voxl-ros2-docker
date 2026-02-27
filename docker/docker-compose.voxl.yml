@@ -22,6 +22,5 @@ services:
     restart: unless-stopped
     stdin_open: true
     tty: true
-    # Uncomment to auto-launch your flight stack:
-    # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch my_drone_pkg drone.launch.py"
+    # command: What should be run when container starts
     command: /bin/bash

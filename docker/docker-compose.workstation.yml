@@ -21,12 +21,10 @@ services:
       - dev-install:/ros2_ws/install
       - dev-log:/ros2_ws/log
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # - ./cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro
     environment:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-      # - CYCLONEDDS_URI=file:///ros2_ws/cyclonedds.xml
     stdin_open: true
     tty: true
     command: /bin/bash
@@ -64,9 +62,4 @@ volumes:
     name: dev-install
   dev-log:
     name: dev-log
-  # dev-build:
-  # dev-install:
-  # dev-log:
-  # cross-build:
-  # cross-install:
-  # cross-log:
+

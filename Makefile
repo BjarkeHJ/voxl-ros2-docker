@@ -20,6 +20,10 @@ setup-qemu: ## Install QEMU user-static for arm64 emulation (run once)
 
 # ---- BUILD IMAGES ----
 
+.PHONY: build-deps
+build-deps: ## Build only the dependency base stage (useful to verify deps)
+	@$(SCRIPT) build-deps
+
 .PHONY: build-dev
 build-dev: ## Build the full dev image (native x86_64)
 	@$(SCRIPT) build-dev
@@ -88,8 +92,8 @@ voxl-stop: ## Stop the voxl-drone container
 
 # ---- COMPOUND TARGETS ----
 
-.PHONY: build-all
-build-all: build-dev build-cross build-runtime ## Build all images
+.PHONY: build-all-images
+build-all-images: build-dev build-cross build-runtime ## Build all images
 
 .PHONY: deploy-all
 deploy-all: build-runtime export-runtime deploy deploy-image ## Full build + deploy pipeline

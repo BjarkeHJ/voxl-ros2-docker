@@ -36,6 +36,7 @@ Help: $(basename "$0") <command>
   setup-qemu           Install QEMU user-static for arm64 emulation (run once)
 
 ---- BUILD IMAGES ----
+  build-deps           Build only the dependency base stage (useful to verify deps)
   build-dev            Build the full dev image (native x86_64)
   build-cross          Build the full dev image for arm64 via QEMU
   build-runtime        Build the slim runtime image for arm64
@@ -74,6 +75,18 @@ cmd_setup_qemu() {
 }
 
 # ============================== BUILD IMAGES =================================
+
+cmd_build_deps() {
+    echo "==> Building dependency base image (voxl-deps)..."
+    docker buildx build \
+        --platform linux/amd64 \
+        --target voxl-deps \
+        -f "${DOCKER_DIR}/Dockerfile" \
+        -t "${IMAGE_NAME}:deps-amd64" \
+        --load \
+        "${DOCKER_DIR}"
+    echo "==> Built: ${IMAGE_NAME}:deps-amd64"
+}
 
 cmd_build_dev() {
     echo "==> Building dev image for x86_64 (voxl-dev)..."
@@ -157,11 +170,11 @@ cmd_extract_install() {
 
     echo "==> Extracting arm64 install/ from cross-build volume..."
 
-    # Start a temporary container to access the named volume
+    # Use existing image to access the name volume
     docker run --rm \
         -v cross-install:/src:ro \
         -v "${dest}:/dest" \
-        ubuntu:22.04 \
+        "${IMAGE_NAME}:dev-amd64" \
         bash -c "cp -a /src/. /dest/"
 
     echo "==> Extracted to ${dest}/"
@@ -175,10 +188,15 @@ cmd_deploy() {
     echo "==> Preparing deploy directory..."
     mkdir -p "${deploy_dir}"
 
+    # Stop the running container before syncing new files
+    echo "==> Stopping drone container (if running)..."
+    ssh "${VOXL_USER}@${VOXL_HOST}" \
+        "cd ${VOXL_DIR} 2>/dev/null && docker compose down 2>/dev/null || true"
+
     # Copy compose file for voxl drone
     cp "${DOCKER_DIR}/docker-compose.voxl.yml" "${deploy_dir}/docker-compose.yml"
 
-    # Copy source
+    # Copy source files
     rsync -a --delete --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
         "${PROJECT_DIR}/ros2_ws/src/" "${deploy_dir}/src/"
 
@@ -188,6 +206,7 @@ cmd_deploy() {
         echo "             (Or the drone can build from source if you prefer.)"
     fi
 
+    # Copy install files
     echo "==> Syncing to ${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}..."
     ssh "${VOXL_USER}@${VOXL_HOST}" "mkdir -p ${VOXL_DIR}" # Ensure VOXL_DIR exists on drone
     rsync -avz --progress --delete \
@@ -248,6 +267,7 @@ cmd_voxl_stop() {
 # =============================================================================
 case "${1:-}" in
     setup-qemu)       cmd_setup_qemu ;;
+    build-deps)       cmd_build_deps ;;
     build-dev)        cmd_build_dev ;;
     build-cross)      cmd_build_cross ;;
     build-runtime)    cmd_build_runtime ;;

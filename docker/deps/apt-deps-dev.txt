@@ -1,0 +1,12 @@
+# ==========================================================
+# Development packages (headers + static/shared libs)
+# Installed in the voxl-deps stage for comilation
+# 
+# Rules:
+#   - One package per line
+#   - Comment with where it is needed
+#   - Lines starting with # and blank lines are ignored
+# ==========================================================
+
+# EXAMPLE
+# libopencv-dev         # needed in: voxl-blabla-package

@@ -1,0 +1,19 @@
+# ==========================================================
+# Runtime packages
+# Installed in the voxl-runtime stage. 
+# Keep this as small as possible.
+# 
+# These are the RUNTIME counterparts of packages in apt-deps-dev.txt.
+# For each -dev package, find the matching runtime lib:
+#   apt-cache depends libopencv-dev | grep Depends
+# Or search: apt list 'libopencv-core*'
+#
+# Rules:
+#   - One package per line
+#   - Comment with which dev pacakge it corresponds to
+#   - Lines starting with # and blank lines are ignored
+# ==========================================================
+
+# EXAMPLE
+# libopencv-core4.5d        # runtime for: libopencv-dev
+# libeigen3-dev             # header-only, same package for dev + runtime
