@@ -1,0 +1,3 @@
+[submodule "docker/voxl_airlab_thirdparty"]
+	path = docker/voxl_airlab_thirdparty
+	url = https://github.com/JonanaBanana/voxl_airlab_thirdparty.git

@@ -86,12 +86,11 @@ COPY deps/pip-requirements.txt /tmp/pip-requirements.txt
 RUN pip3 install --no-cache-dir -r /tmp/pip-requirements.txt
 
 # Third-party source builds (clone git repos etc... Each build is its own RUN layer so they cache independently - PIN to tag for reproducability)
-COPY voxl_airlab_thirdparty/ /opt/thirdparty
-RUN +chmod /opt/thirdparty/build_thirdparty.sh \
-  && cd /opt/thirdparty \
-  && ./build_thirdparty.sh \
-  && rm -rf /opt/thirdparty
-  
+COPY voxl_airlab_thirdparty/ /thirdparty
+RUN chmod +x /thirdparty/build_thirdparty_minimal.sh \
+  && cd /thirdparty \
+  && ./build_thirdparty_minimal.sh 
+ 
 # ROSDEP DRYRUN AS LAST STEP OF DEPS SETUP
 
 # Refresh the linker chache so shared libs under /usr/local/lib are found
@@ -115,7 +114,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # RMW
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
-# Create non-root user 
+# Create non-root user
 ARG USERNAME=voxl-dev
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -123,15 +122,18 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
   && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} -s /bin/bash \
   && echo "${USERNAME} ALL=(ALL) NOPASSWD=ALL" >> /etc/sudoers.d/${USERNAME}
 
+# USER ${USERNAME}
+# WORKDIR /ros2_ws
+RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log \
+  && chown -R ${USER_UID}:${USER_GID} /ros2_ws /thirdparty
+
 USER ${USERNAME}
 WORKDIR /ros2_ws
-RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log
 
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USERNAME}/.bashrc \
   && echo "if [ -f /ros2_ws/install/setup.bash ]; then source /ros2_ws/install/setup.bash; fi" >> /home/${USERNAME}/.bashrc
 
 CMD ["/bin/bash"]
-
 
 # =============================================================================
 # STAGE 3: VOXL RUNTIME (minimal - no compilers, no headers, no dev tools)
@@ -164,12 +166,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-pip \
   sudo \ 
   && rm -rf /var/lib/apt/lists/*
-  
-# Runtime-only apt dependencies (shared libs, no headers) - Runtime counterparts of -dev packages in Stage 1
-# COPY deps/apt-deps-runtime.txt /tmp/apt-deps-runtime.txt
-# RUN apt-get update \ 
-#   && grep -vE '^\s*#|^\s*$' /tmp/apt-deps-runtime.txt | xargs -r apt-get install -y --no-install-recommends \
-#   && rm -rf /var/lib/apt/lists/*
 
 COPY deps/apt-deps.txt /tmp/apt-deps.txt
 RUN apt-get update \
@@ -185,6 +181,7 @@ RUN pip3 install --no-cache-dir -r /tmp/pip-requirements.txt
 COPY --from=voxl-deps /usr/local/lib /usr/local/lib
 COPY --from=voxl-deps /usr/local/share/ /usr/local/share
 COPY --from=voxl-deps /usr/local/bin /usr/local/bin
+COPY --from=voxl-deps /thirdparty /thirdparty
 RUN ldconfig
 
 # RMW
@@ -198,9 +195,10 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
   && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} -s /bin/bash \
   && echo "${USERNAME} ALL=(ALL) NOPASSWD=ALL" >> /etc/sudoers.d/${USERNAME}
 
+RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log \
+  && chown -R ${USER_UID}:${USER_GID} /ros2_ws /thirdparty
 USER ${USERNAME}
 WORKDIR /ros2_ws
-RUN mkdir -p /ros2_ws/build /ros2_ws/install /ros2_ws/log
 
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/${USERNAME}/.bashrc \
   && echo "if [ -f /ros2_ws/install/setup.bash ]; then source /ros2_ws/install/setup.bash; fi" >> /home/${USERNAME}/.bashrc
