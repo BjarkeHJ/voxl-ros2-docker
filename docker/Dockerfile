@@ -93,12 +93,6 @@ RUN pip3 install --no-cache-dir -r /tmp/pip-requirements.txt
 RUN echo "===== Building Third-Party dependencies ====="
 COPY voxl_airlab_thirdparty/ thirdparty/
 
-# PANGOLIN
-RUN apt update \
-  && cd /thirdparty/build_scripts/ \
-  && chmod +x build_pangolin.sh \
-  && ./build_pangolin.sh
-
 # CERES-SOLVER/
 RUN apt update \
   && cd /thirdparty/build_scripts/ \
