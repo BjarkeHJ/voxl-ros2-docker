@@ -5,7 +5,6 @@
 # Pre-built install/ artifacts are mounted in via volume
 # =============================================================================
 services:
-
   voxl:
     image: voxl-drone:runtime-arm64                   # Pre-built slim image
     container_name: voxl-runtime
@@ -14,29 +13,16 @@ services:
     network_mode: host
     ipc: host
     volumes:
-      - ./src:/ros2_ws/src                            # Source (for Python nodes / launch files)
-      - ./install:/ros2_ws/install                    # Pre-built ARM64 binaries from workstation
+      - ./ros2_ws:/ros2_ws                            # Modified ros2_ws containing only required files for runtime
       - /dev:/dev                                     # Serial ports, cameras, IMU, GPIO
+      - ./cyclonedds.xml:/tmp/cyclonedds.xml
+      - ./entrypoint.sh:/tmp/entrypoint.sh
     environment:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - CYCLONEDDS_URI=file:///tmp/cyclonedds.xml
     restart: unless-stopped
     stdin_open: true
     tty: true
-    # command: What should be run when container starts
-    command: /bin/bash
-
-
-    # command:
-    # - /bin/bash
-    # - -c
-    # - >
-    #   source /opt/ros/humble/setup.bash &&
-    #   if [ -f /ros2_ws/install/setup.bash ]; then source /ros2_ws/install/setup.bash; fi &&
-    #   ros2 run v4l2_camera v4l2_camera_node --ros-args
-    #   -p video_device:=/dev/video2
-    #   -p image_size:=[640,512]
-    #   -p pixel_format:=YUYV
-    #   -p buffers:=8
-    #   -r image_raw:=ircam
-    #   -r image_raw/ffmpeg:=ircam/ffmpeg
+    command: ["/bin/bash"]
+    entrypoint: ["/tmp/entrypoint.sh"]

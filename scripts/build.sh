@@ -49,9 +49,8 @@ Help: $(basename "$0") <command>
   build-ws-cross       Run colcon build in the arm64 container (produces arm64 binaries)
 
 ---- DEPLOY TO DRONE ----
+  deploy               Extract cross-built ARM64 install and rsync install + configs to drone
   export-runtime       Save the slim runtime image to a .tar.gz file
-  extract-install      Copy cross-built arm64 install/ out of the Docker volume
-  deploy               Rsync source + install + compose to drone
   deploy-image         Transfer the runtime image .tar.gz to drone and load it
 
 ---- DRONE OPERATIONS (via SSH) ----
@@ -173,17 +172,27 @@ cmd_cross() {
 }
 
 cmd_build_ws() {
+    local colcon_args="--symlink-install"
+    if [ $# -gt 0 ]; then
+        colcon_args+=" --packages-select $*"
+    fi
+
     echo "==> Running colcon build in native dev container..."
     docker compose -f "${DOCKER_DIR}/docker-compose.workstation.yml" run --rm dev \
-        bash -c "source /opt/ros/humble/setup.bash && cd /ros2_ws && colcon build --symlink-install"
+        bash -c "source /opt/ros/humble/setup.bash && cd /ros2_ws && colcon build ${colcon_args}"
 }
 
 cmd_build_ws_cross() {
+    local colcon_args="--symlink-install"
+    if [ $# -gt 0 ]; then
+        colcon_args+=" --packages-select $*"
+    fi
+
     echo "==> Running colcon build in arm64 container (QEMU-emulated)..."
     docker compose -f "${DOCKER_DIR}/docker-compose.workstation.yml" run --rm cross-arm64 \
-        bash -c "source /opt/ros/humble/setup.bash && colcon build"
+        bash -c "source /opt/ros/humble/setup.bash && colcon build ${colcon_args}"
     echo ""
-    echo "==> ARM64 binaries built. Run 'extract-install' to copy them out."
+    echo "==> ARM64 binaries built. Run 'deploy' to deploy to drone."
 }
 
 # =============================== DEPLOY ======================================
@@ -197,51 +206,50 @@ cmd_export_runtime() {
     echo "==> Saved: ${outfile} (${size})"
 }
 
-cmd_extract_install() {
-    local dest="${PROJECT_DIR}/deploy/install"
-    # rm -rf "${dest}"
-    docker run --rm -v "${dest}:/dest" alpine sh -c "rm -rf /dest/*"
-    mkdir -p "${dest}"
-
-    echo "==> Extracting arm64 install/ from cross-build volume..."
-
-    # Use existing image to access the name volume
-    docker run --rm \
-    -v cross-install:/src:ro \
-    -v cross-build:/ros2_ws/build:ro \
-    -v "${PROJECT_DIR}/ros2_ws/src:/ros2_ws/src:ro" \
-    -v "${dest}:/dest" \
-    "${IMAGE_NAME}:dev-arm64" \
-    bash -c "cp -aL /src/. /dest/"
-    
-    echo "==> Extracted to ${dest}/"
-    echo "    Contents:"
-    ls "${dest}/" 2>/dev/null || echo "    (empty — have you run build-ws-cross?)"
-}
-
 cmd_deploy() {
     local deploy_dir="${PROJECT_DIR}/deploy"
+    local ros2_install="${deploy_dir}/ros2_ws/install"
+
+    sudo chown -R $(id -u):$(id -g) "${deploy_dir}" 2>/dev/null || true
+
+    # clean deploy dir prior to extract
+    cd ${deploy_dir} && rm -fr * # OBS TODO: SKIP DELETE OF DATA FOLDER FOR OUTPUTS
 
     echo "==> Preparing deploy directory..."
-    mkdir -p "${deploy_dir}"
+    mkdir -p ${ros2_install}
+
+
+    # Open QEMU ARM64 container and copy install and source files and resolve symlinks
+    echo "==> Extracting ARM64 install from cross-build volume..."
+    docker run --rm \
+        --platform linux/arm64 \
+        -v cross-install:/cross_build/install_src:ro \
+        -v cross-build:/ros2_ws/build:ro \
+        -v "${PROJECT_DIR}/ros2_ws/src:/ros2_ws/src:ro" \
+        -v "${ros2_install}:/ros2_install_dest" \
+        "${IMAGE_NAME}:dev-arm64" \
+        bash -c "cp -aL /cross_build/install_src/. /ros2_install_dest/"
+    if [ -z "$(ls -A "${ros2_install}" 2>/dev/null)" ]; then
+        echo "    (empty — have you run build-ws-cross?)"
+    else
+        echo "==> Extracted!"
+    fi
 
     # Stop the running container before syncing new files
     echo "==> Stopping drone container (if running)..."
     ssh "${VOXL_USER}@${VOXL_HOST}" \
         "cd ${VOXL_DIR} 2>/dev/null && docker compose down 2>/dev/null || true"
 
-    # Copy compose file for voxl drone
+    echo "==> Beginning transfer to VOXL2..."
+
+    # Copy compose file and cyclonedds config
     cp "${DOCKER_DIR}/docker-compose.voxl.yml" "${deploy_dir}/docker-compose.yml"
+    cp "${DOCKER_DIR}/cyclonedds.xml" "${deploy_dir}/cyclonedds.xml"
+    cp "${DOCKER_DIR}/entrypoint.sh" "${deploy_dir}/entrypoint.sh"
 
     # Copy source files
-    rsync -a --delete --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
-        "${PROJECT_DIR}/ros2_ws/src/" "${deploy_dir}/src/"
-
-    # Check install/ exists
-    if [ ! -d "${deploy_dir}/install" ] || [ -z "$(ls -A "${deploy_dir}/install" 2>/dev/null)" ]; then
-        echo "    WARNING: deploy/install/ is empty. Run 'extract-install' first."
-        echo "             (Or the drone can build from source if you prefer.)"
-    fi
+    # rsync -a --delete --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
+    #     "${PROJECT_DIR}/ros2_ws/src/" "${deploy_dir}/ros2_ws/src/"
 
     # Copy install files
     echo "==> Syncing to ${VOXL_USER}@${VOXL_HOST}:${VOXL_DIR}..."
@@ -254,8 +262,9 @@ cmd_deploy() {
     echo "==> Deploy complete. Drone directory layout:"
     echo "    ${VOXL_DIR}/"
     echo "    ├── docker-compose.yml"
-    echo "    ├── src/               (ROS2 packages)"
-    echo "    └── install/           (pre-built arm64 binaries)"
+    echo "    ├── cyclonedds.xml"
+    echo "    └── ros2_ws"
+    echo "        ├── install/          (pre-built arm64 binaries)"
 }
 
 cmd_deploy_image() {
@@ -286,6 +295,15 @@ cmd_voxl_start() {
 
 cmd_voxl_shell() {
     echo "==> Connecting to drone container..."
+    local running
+    running=$(ssh "${VOXL_USER}@${VOXL_HOST}" \
+        "docker ps -q -f name=voxl-runtime" 2>/dev/null)
+
+    if [ -z "$running" ]; then
+        echo "==> Container not running. Starting it first..."
+        cmd_voxl_start
+    fi
+
     ssh -t "${VOXL_USER}@${VOXL_HOST}" \
         "docker exec -it voxl-runtime bash"
 }
@@ -311,11 +329,10 @@ case "${1:-}" in
     clean-build)      cmd_clean_build ;; 
     dev)              cmd_dev ;;
     cross)            cmd_cross ;;
-    build-ws)         cmd_build_ws ;;
-    build-ws-cross)   cmd_build_ws_cross ;;
-    export-runtime)   cmd_export_runtime ;;
-    extract-install)  cmd_extract_install ;;
+    build-ws)         shift; cmd_build_ws "$@" ;;
+    build-ws-cross)   shift; cmd_build_ws_cross "$@" ;;
     deploy)           cmd_deploy ;;
+    export-runtime)   cmd_export_runtime ;;
     deploy-image)     cmd_deploy_image ;;
     voxl-start)       cmd_voxl_start ;;
     voxl-shell)       cmd_voxl_shell ;;

@@ -52,25 +52,21 @@ cross: ## Open a shell in the arm64 QEMU dev container
 
 .PHONY: build-ws
 build-ws: ## Run colcon build in the native dev container
-	@$(SCRIPT) build-ws
+	@$(SCRIPT) build-ws $(PKGS)
 
 .PHONY: build-ws-cross
 build-ws-cross: ## Run colcon build in the arm64 container (produces arm64 binaries)
-	@$(SCRIPT) build-ws-cross
+	@$(SCRIPT) build-ws-cross $(PKGS)
 
 # ---- DEPLOY TO DRONE ----
-
-.PHONY: export-runtime
-export-runtime: ## Save the slim runtime image to a .tar.gz file
-	@$(SCRIPT) export-runtime
-
-.PHONY: extract-install
-extract-install: ## Copy cross-built arm64 install/ out of the Docker volume
-	@$(SCRIPT) extract-install
 
 .PHONY: deploy
 deploy: ## Rsync source + install + compose to drone
 	@$(SCRIPT) deploy
+
+.PHONY: export-runtime
+export-runtime: ## Save the slim runtime image to a .tar.gz file
+	@$(SCRIPT) export-runtime
 
 .PHONY: deploy-image
 deploy-image: ## Transfer the runtime image .tar.gz to drone and load it
