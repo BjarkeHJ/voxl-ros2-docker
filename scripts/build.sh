@@ -264,7 +264,7 @@ cmd_deploy() {
     echo "    ├── docker-compose.yml"
     echo "    ├── cyclonedds.xml"
     echo "    └── ros2_ws"
-    echo "        ├── install/          (pre-built arm64 binaries)"
+    echo "        └── install/          (pre-built arm64 binaries)"
 }
 
 cmd_deploy_image() {
