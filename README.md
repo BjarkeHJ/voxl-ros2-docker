@@ -5,10 +5,6 @@ The VOXL2 Companion Computer is an ARM64 platform running Ubuntu 18.04. \
 This setup provides a Ubuntu 22.04 + ROS2 Humble workspace via Docker. \
 Through emulated compilation if offers tooling for developing on an x86_64 workstation and deploying pre-built ARM64 binaries to the drone.
 
-- Multi-stage Dockerfile — full dev image for the workstation, slim runtime image for the drone
-- Emulated-compilation via QEMU — build ARM64 binaries on your x86 workstation with zero toolchain configuration
-- One-command deploy — rsync source and pre-built packages to the drone over SSH
-
 ### Requirements (Tested)
 - Workstation (x86_64)
   - Ubuntu $\ge$ 18.04
