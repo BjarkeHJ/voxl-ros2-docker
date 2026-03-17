@@ -64,7 +64,6 @@ RUN apt-get update && apt-get install -y \
 # Smaller ROS2 packages (apt) - Layered for cachability
 RUN apt-get update && apt-get install -y \
   ros-humble-vision-opencv \
-  ros-humble-v4l2-camera \
   ros-humble-image-transport \
   ros-humble-ffmpeg-image-transport \
   ros-humble-image-view \
@@ -191,9 +190,8 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 # TODO: remove image_transport and image_view dependency from rovtio (not necessary)
-# Smaller ROS2 packages (apt) - Layered for cachability (remove v4l2-cameram, image-transport, ffmpeg-image-transtport)
+# Smaller ROS2 packages (apt) - Layered for cachability (image-transport, ffmpeg-image-transtport)
 RUN apt-get update && apt-get install -y \
-  ros-humble-v4l2-camera \
   ros-humble-image-transport \
   ros-humble-ffmpeg-image-transport \
   ros-humble-image-view \

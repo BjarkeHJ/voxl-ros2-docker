@@ -183,7 +183,8 @@ cmd_build_ws() {
 }
 
 cmd_build_ws_cross() {
-    local colcon_args="--symlink-install"
+    # local colcon_args="--symlink-install"
+    local colcon_args=""
     if [ $# -gt 0 ]; then
         colcon_args+=" --packages-select $*"
     fi
@@ -217,7 +218,6 @@ cmd_deploy() {
 
     echo "==> Preparing deploy directory..."
     mkdir -p ${ros2_install}
-
 
     # Open QEMU ARM64 container and copy install and source files and resolve symlinks
     echo "==> Extracting ARM64 install from cross-build volume..."
